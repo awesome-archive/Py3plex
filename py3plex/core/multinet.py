@@ -282,7 +282,36 @@ class multi_layer_network:
         self.core_network = nx.from_scipy_sparse_matrix(self.core_network,directed)
         self.add_dummy_layers()
         self.sparse_enabled = False
-            
+
+    def summary(self):
+        
+        """
+        Generate a short summary of the network in form of a dict.
+        """
+
+        unique_layers = len({n[1] for n in self.core_network.nodes()})
+        nodes = len(self.core_network.nodes())
+        edges = len(self.core_network.edges())
+        components =  len(list(nx.connected_components(self.core_network.to_undirected())))
+        node_degree_vector = list(dict(nx.degree(self.core_network)).values())
+        mean_degree = np.mean(node_degree_vector)
+        return {"Number of layers":unique_layers,"Nodes":nodes,"Edges":edges,"Mean degree":mean_degree,"CC":components}
+
+    def get_unique_entity_counts(self):
+
+        """
+        :input: self object
+        """
+        
+        node_layer_tuples = set()
+        unique_nodes = set()
+        
+        for edge in self.get_edges():
+            node_layer_tuples.add(edge)
+            unique_nodes.add(edge[0])
+
+        return len(node_layer_tuples), len(unique_nodes)
+    
     def basic_stats(self,target_network=None):
 
         """ A method for obtaining a network's statistics """
@@ -296,9 +325,13 @@ class multi_layer_network:
 
             if target_network is None:            
                 print(nx.info(self.core_network))
+                nt, n = self.get_unique_entity_counts()
+                print("Number of unique nodes: {}".format(n))
 
             else:
                 print(nx.info(target_network))
+                nt, n = self.get_unique_entity_counts()                
+                print("Number of unique nodes: {}".format(n))
 
     def get_edges(self,data=False,multiplex_edges=False):
         """ A method for obtaining a network's edges """
@@ -762,7 +795,7 @@ class multi_layer_network:
         supra_adjacency_matrix_plot(adjmat,**kwargs)
 
     
-    def visualize_network(self,style="diagonal",parameters_layers=None,parameters_multiedges=None,show=False,compute_layouts="force",layouts_parameters=None,verbose=True,orientation="upper",resolution=0.01,other_parameters=None, axis = None, fig = None):
+    def visualize_network(self,style="diagonal",parameters_layers=None,parameters_multiedges=None,show=False,compute_layouts="force",layouts_parameters=None,verbose=True,orientation="upper",resolution=0.01,other_parameters=None, axis = None, fig = None, no_labels = False):
         if server_mode:
             return 0
 
@@ -776,6 +809,8 @@ class multi_layer_network:
         
         if style == "diagonal":
             network_labels, graphs, multilinks = self.get_layers(style)
+            if no_labels:
+                network_labels = None
             if parameters_layers is None:
                 if axis:
                     axis = draw_multilayer_default(graphs,display=False,background_shape="circle",labels=network_labels,node_size=3,verbose=verbose)
@@ -797,9 +832,9 @@ class multi_layer_network:
                             ax = draw_multiedges(graphs,edges,alphachannel=0.2,linepoints="-",linecolor="red",curve_height=2,linmod="bottom",linewidth=1.7,resolution=resolution)
                     else:
                         if axis:
-                            axis = draw_multiedges(graphs,edges,alphachannel=0.05,linepoints="-.",linecolor="black",curve_height=2,linmod=orientation,linewidth=1,resolution=resolution)
+                            axis = draw_multiedges(graphs,edges,alphachannel=0.05,linepoints="-.",linecolor="black",curve_height=2,linmod=orientation,linewidth=0.5,resolution=resolution)
                         else:
-                            ax = draw_multiedges(graphs,edges,alphachannel=0.05,linepoints="-.",linecolor="black",curve_height=2,linmod=orientation,linewidth=1,resolution=resolution)                      
+                            ax = draw_multiedges(graphs,edges,alphachannel=0.05,linepoints="-.",linecolor="black",curve_height=2,linmod=orientation,linewidth=0.5,resolution=resolution)                      
                     enum+=1
             else:
                 enum = 1
